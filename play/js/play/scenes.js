@@ -129,7 +129,8 @@ export const SCENES = {
       spawnYaw: -Math.PI / 2,
       startKey: 3,
       tips: [
-        // Tips for this task go here, one string per line.
+        "Use Skills 1 (Turn Left) and 3 (Move Forward-Right) to navigate.",
+        "When your ant gets stuck on a wall, press 2 (Sharp Turn Left) to escape and reorient the ant toward the desired direction."
       ],
       description: "6×6 maze on a 45° view. Walk to the red disc in the far corner: 64 m shortest route, 11 turns, 5 dead ends.",
     }),
