@@ -105,7 +105,8 @@ export const SCENES = {
       startKey: 3,
       tips: [
         "Use Skills 1 (Turn Left) and 3 (Move Forward-Right) to position the cube between the front legs.",
-        "If your cube gets stuck against the wall, press 5 (Push)!"
+        "If your cube gets stuck against the wall, press 5 (Push)!",
+        "If your ant accidentally goes past the cube, press 2 (Sharp Turn Left) to return to the front of the cube and try to push it again."
       ],
       description: "Push the cube 15 m down the corridor until its center is in the disc.",
     }),
@@ -118,7 +119,8 @@ export const SCENES = {
       startKey: 3,
       tips: [
         "Use Skills 1 (Turn Left) and 3 (Move Forward-Right) to position the cube between the front legs.",
-        "If your cube gets stuck against the wall, press 5 (Push)!"
+        "If your cube gets stuck against the wall, press 5 (Push)!",
+        "If your ant accidentally goes past the cube, press 2 (Sharp Turn Left) to return to the front of the cube and try to push it again."
       ],
       description: "Push the cube 15 m, around the corner, and 15 m more into the disc.",
     }),
