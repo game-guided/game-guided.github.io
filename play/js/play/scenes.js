@@ -9,6 +9,8 @@
 
 const WALL_THICKNESS = 0.2;
 const GOAL_MARKER_THICKNESS = 0.02;
+// Push scenes: the goal is a line across the corridor, this wide along the corridor.
+const GOAL_LINE_WIDTH = 0.15;
 const GOAL_COLOR = "0.9 0.1 0.1";          // red disc, same family as the cube and the trails
 const WALL_COLOR = "0.84 0.80 0.72";        // warm off-white, for the blue-grey floor
 // Robots whose floor is light (the Ant, see robots.js `floorPalette`) pass this instead:
@@ -21,7 +23,7 @@ const CUBE_COLOR = "0.85 0.12 0.10";        // red, like its trail markers
 // The player's two Ant push scenes use a much lighter cube than Isaac's, where it weighs
 // the ant itself (0.9109 kg, shared/scenes.py ANT_MASS): easier to steer by hand.
 const ANT_CUBE_MASS = 0.2;
-// How far the side walls of a push scene run on past the goal disc, so the disc sits
+// How far the side walls of a push scene run on past the goal line, so the line sits
 // inside the corridor instead of at its open end (corridorWallBoxes `endMargin`).
 const PUSH_END_MARGIN = 5.0;
 // Every push and maze scene (both robots) fails after this much simulated time.
@@ -33,6 +35,10 @@ function scene(key, title, o = {}) {
     pathWaypoints: null, corridorWidth: 4.0, wallHeight: 1.0, startMargin: 1.0, endMargin: 0.0,
     mazeMap: null, cellSize: 3.0, shadowExtent: null,
     goalRadius: 0.3, goalTarget: "cube", cubeSize: null, cubePos: [0, 0], cubeMass: 1.0,
+    // Corridor scenes only: the goal is a line across the corridor at the last waypoint,
+    // wall to wall, and the target succeeds the moment its centre crosses it (instead of
+    // a disc of `goalRadius` around the waypoint).
+    goalLine: false,
     spawnYaw: 0.0, camera: null, fitView: false, floorPalette: null, description: "",
     // Panel hover card (main.js renderTips): how to actually play this scene, one line
     // per tip. Free text -- edit these. Empty falls back to `description`.
@@ -47,6 +53,11 @@ function scene(key, title, o = {}) {
     get goalPos() {
       if (this.mazeMap) return mazeGoalPos(this);
       return this.pathWaypoints ? this.pathWaypoints[this.pathWaypoints.length - 1] : null;
+    },
+    // Unit direction of the corridor's last segment when the goal is a line, else null:
+    // the line is normal to it and "past the line" is a positive projection on it.
+    get goalDir() {
+      return this.goalLine && this.pathWaypoints ? corridorEndDir(this) : null;
     },
   };
 }
@@ -102,7 +113,7 @@ export const SCENES = {
     // The default view (render.js frameScene) shifted onto the corridor's centre line
     // (eye.y == target.y == 0): the corridor runs straight away down +x, symmetric in frame.
     scene("push_straight", "Push Cube Straight", {
-      pathWaypoints: [[0, 0], [15, 0]], wallHeight: 1.0, goalTarget: "cube", goalRadius: 0.5,
+      pathWaypoints: [[0, 0], [15, 0]], wallHeight: 1.3, goalTarget: "cube", goalLine: true,
       endMargin: PUSH_END_MARGIN,
       cubeSize: 1.0, cubePos: [3, 0], cubeMass: ANT_CUBE_MASS, spawnYaw: -Math.PI / 2,
       camera: { eye: [-6.8, 0, 8.5], lookat: [3.0, 0, 0.6] },
@@ -112,12 +123,12 @@ export const SCENES = {
         "If your cube gets stuck against the wall, press 5 (Push)!",
         "If your ant accidentally goes past the cube, press 2 (Sharp Turn Left) to return to the front of the cube and try to push it again."
       ],
-      description: "Push the cube 15 m down the corridor until its center is in the disc.",
+      description: "Push the cube 15 m down the corridor until its center crosses the red line.",
     }),
     // Framed like the mazes (fitView), as the G1's turn-left corridor is: the L is 17 m on a
     // side, and the close default view showed neither the corner nor the goal.
     scene("push_turn_left", "Push Cube TurnLeft", {
-      pathWaypoints: [[0, 0], [15, 0], [15, 15]], wallHeight: 1.0, goalTarget: "cube", goalRadius: 0.5,
+      pathWaypoints: [[0, 0], [15, 0], [15, 15]], wallHeight: 1.3, goalTarget: "cube", goalLine: true,
       endMargin: PUSH_END_MARGIN,
       cubeSize: 1.0, cubePos: [3, 0], cubeMass: ANT_CUBE_MASS, spawnYaw: -Math.PI / 2, fitView: true,
       startKey: 3, timeLimit: TASK_TIME_LIMIT,
@@ -126,7 +137,7 @@ export const SCENES = {
         "If your cube gets stuck against the wall, press 5 (Push)!",
         "If your ant accidentally goes past the cube, press 2 (Sharp Turn Left) to return to the front of the cube and try to push it again."
       ],
-      description: "Push the cube 15 m, around the corner, and 15 m more into the disc.",
+      description: "Push the cube 15 m, around the corner, and 15 m more across the red line.",
     }),
     // Isaac SingleAnt-Maze-Medium: 4 m cells (the corridor width), 1 m walls. Isaac's own
     // camera is straight down; the player frames every maze itself (render.js _frameBox).
@@ -153,25 +164,25 @@ export const SCENES = {
     // Twice the corridor of the other G1 scenes: the goal sits 15 m out, so the cube (2 m ahead of
     // the G1, as everywhere) has 13 m to travel instead of 5.5.
     scene("push_straight", "Push Cube Straight", {
-      pathWaypoints: [[-2, 0], [15, 0]], wallHeight: 1.5, goalTarget: "cube", goalRadius: 0.5,
+      pathWaypoints: [[-2, 0], [15, 0]], wallHeight: 1.5, goalTarget: "cube", goalLine: true,
       endMargin: PUSH_END_MARGIN,
       cubeSize: 1.2, cubePos: [2, 0], cubeMass: 1.5,
       startKey: 2, timeLimit: TASK_TIME_LIMIT,
       tips: [
         // Tips for this task go here, one string per line.
       ],
-      description: "Push the 1.2 m cube 13 m down the corridor until its center is in the disc.",
+      description: "Push the 1.2 m cube 13 m down the corridor until its center crosses the red line.",
     }),
     // fitView, as for the Ant: the same view down the corridor's own axis, the whole L in frame.
     scene("push_turn_left", "Push Cube TurnLeft", {
-      pathWaypoints: [[0, 0], [7.5, 0], [7.5, 7.5]], wallHeight: 1.5, goalTarget: "cube", goalRadius: 0.5,
+      pathWaypoints: [[0, 0], [7.5, 0], [7.5, 7.5]], wallHeight: 1.5, goalTarget: "cube", goalLine: true,
       endMargin: 2.0,      // half the legs of the other push scenes: 5 m past the goal would dwarf them
       cubeSize: 1.2, cubePos: [2, 0], cubeMass: 1.5, fitView: true,
       startKey: 2, timeLimit: TASK_TIME_LIMIT,
       tips: [
         // Tips for this task go here, one string per line.
       ],
-      description: "Push the cube 7.5 m, around the corner, and 7.5 m more into the disc.",
+      description: "Push the cube 7.5 m, around the corner, and 7.5 m more across the red line.",
     }),
     // Isaac SingleG1-Maze: 3 m cells and 2 m walls; the player draws the walls at 1.2 m so the
     // 45° view sees over them. Same as the Ant maze: it frames the maze itself rather than
@@ -247,6 +258,13 @@ export function corridorWallBoxes(spec) {
 // ---------------------------------------------------------------------------
 // Maze: port of Isaac's MazeMixin (skill_play_scene.py).
 // ---------------------------------------------------------------------------
+// Unit direction of a corridor's last segment (the goal line lies across it).
+export function corridorEndDir(spec) {
+  const p = spec.pathWaypoints, a = p[p.length - 2], b = p[p.length - 1];
+  const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy);
+  return [dx / len, dy / len];
+}
+
 // Axis-aligned xy extent of a corridor's walls, the corridor twin of mazeBounds: the
 // scenes that ask for `fitView` are framed from it (render.js _frameBox).
 export function corridorBounds(spec) {
@@ -347,10 +365,21 @@ function wallGeomXml(b, wallHeight, wallColor = WALL_COLOR) {
     `contype="3" conaffinity="3" condim="3" friction="1 0.5 0.5" rgba="${wallColor} 1"/>`;
 }
 
+// The goal marker: a disc of `goalRadius` at the goal, or (goalLine) a thin box across
+// the corridor from one wall's inner face to the other's, normal to the last segment.
+// Both are named goal_marker: render.js lights them and drops their shadow. Corridors
+// are axis-aligned (corridorWallBoxes assumes the same), so the box needs no rotation.
 function goalGeomXml(spec) {
   const [gx, gy] = spec.goalPos;
-  return `<geom name="goal_marker" type="cylinder" pos="${f(gx)} ${f(gy)} ${f(0.5 * GOAL_MARKER_THICKNESS)}" ` +
-    `size="${f(spec.goalRadius)} ${f(0.5 * GOAL_MARKER_THICKNESS)}" contype="0" conaffinity="0" rgba="${GOAL_COLOR} 1"/>`;
+  const pos = `${f(gx)} ${f(gy)} ${f(0.5 * GOAL_MARKER_THICKNESS)}`;
+  const common = `contype="0" conaffinity="0" rgba="${GOAL_COLOR} 1"`;
+  const dir = spec.goalDir;
+  if (dir) {
+    const along = 0.5 * GOAL_LINE_WIDTH, across = 0.5 * spec.corridorWidth;
+    const [sx, sy] = dir[0] !== 0 ? [along, across] : [across, along];
+    return `<geom name="goal_marker" type="box" pos="${pos}" size="${f(sx)} ${f(sy)} ${f(0.5 * GOAL_MARKER_THICKNESS)}" ${common}/>`;
+  }
+  return `<geom name="goal_marker" type="cylinder" pos="${pos}" size="${f(spec.goalRadius)} ${f(0.5 * GOAL_MARKER_THICKNESS)}" ${common}/>`;
 }
 
 export function sceneXml(spec, wallColor = WALL_COLOR) {

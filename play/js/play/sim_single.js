@@ -239,13 +239,21 @@ export class MujocoSingleEnv {
 
   fallen() { return this.bodyPos(this.termBodyId)[2] < this.robot.terminationHeight; }
 
+  // Metres to the goal: to the goal point, or, for a goal line, the distance still to
+  // travel along the corridor before crossing it (<= 0 once the target's centre is past it).
   goalDistance() {
     const gp = this.scene.goalPos;
     if (!gp) return null;
     const p = this.scene.goalTarget === "cube" ? this.cubePos() : this.rootPos();
+    const dir = this.scene.goalDir;
+    if (dir) return -((p[0] - gp[0]) * dir[0] + (p[1] - gp[1]) * dir[1]);
     return Math.hypot(p[0] - gp[0], p[1] - gp[1]);
   }
 
-  reachedGoal() { const d = this.goalDistance(); return d != null && d < this.scene.goalRadius; }
+  reachedGoal() {
+    const d = this.goalDistance();
+    if (d == null) return false;
+    return this.scene.goalDir ? d <= 0 : d < this.scene.goalRadius;
+  }
 }
 

@@ -410,7 +410,7 @@ function updateHud() {
   els.hudTime.textContent = `${elapsed().toFixed(1)}s` + (limit != null ? ` / ${limit}s` : "");
   const d = state.env.goalDistance();
   els.hudGoalLine.style.display = d == null ? "none" : "";
-  if (d != null) els.hudGoal.textContent = d.toFixed(2);
+  if (d != null) els.hudGoal.textContent = Math.max(0, d).toFixed(2);   // a crossed goal line reads 0, not negative
   const s = state.stats;
   const avg = s.success ? `${(s.successTime / s.success).toFixed(1)}s` : "–";
   els.hudStats.textContent = `Success ${s.success} · Fail ${s.fail} · Total ${s.total} · Avg success time ${avg}`;
