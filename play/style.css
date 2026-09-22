@@ -99,7 +99,7 @@ input[type=checkbox], input[type=radio] { width: 16px; height: 16px; accent-colo
 .hudline { font-size: 13px; color: var(--muted); }
 .hudline .scene { color: var(--fg); font-weight: 700; font-size: 14px; }
 .hudline .k { color: var(--muted); }
-.hudline #hudSkill, .hudline #hudCtr, .hudline #hudStep, .hudline #hudTime, .hudline #hudGoal,
+.hudline #hudSkill, .hudline #hudCtr, .hudline #hudTime, .hudline #hudGoal,
 .hudline #hudMax, .hudline #hudScore, .hudline #hudLeft, .hudline #hudHp {
   color: var(--fg); font-weight: 700; font-variant-numeric: tabular-nums; }
 /* Game Play reads from across the room: its clock, HP and score are the panel title's

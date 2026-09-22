@@ -47,7 +47,9 @@ const state = {
   trail: true,               // a marker where the robot's root is (mazes) or where the cube is (push scenes)
   puckResets: 0, trailReset: true,   // franka: clear the puck/gripper trails on a respawn
   kbSkill: 0, skill: 0, ctr: 0, controlDt: 1 / 60, acc: 0, last: 0,
-  stats: { goals: 0, falls: 0, episodes: 0 }, pendingReset: null,
+  // Success / Fail (a fall or a time-out) / Total, plus the summed sim time of the successes
+  // for the average the HUD shows. Reset with the robot and with the scene.
+  stats: { success: 0, fail: 0, total: 0, successTime: 0 }, pendingReset: null,
 };
 
 function setStatus(msg) { if (els.status) els.status.textContent = msg; }
@@ -85,7 +87,7 @@ async function loadRobot(key) {
     state.controlDt = robot.simDt * robot.decimation;
     state.kbSkill = Math.min(state.kbSkill, policy.numSkills - 1);
     if (robot.resetSkill != null) state.kbSkill = robot.resetSkill;
-    state.stats = { goals: 0, falls: 0, episodes: 0 };
+    state.stats = freshStats();
     if (!SCENES[key].some((s) => s.key === state.sceneKey)) state.sceneKey = SCENES[key][0].key;
     buildSkillButtons();
     await buildScene(state.sceneKey);
@@ -122,6 +124,7 @@ async function buildScene(key) {
     state.renderer.clearTrail();
     seedCubeTrail();
     state.ctr = 0; state.pendingReset = null;
+    state.stats = freshStats();
     const slot = resetSlot();                 // the scene's startKey, else the robot's resetSkill
     if (slot != null) state.kbSkill = slot;
     refreshSkillButtons();
@@ -135,7 +138,7 @@ async function buildScene(key) {
     setTrails(franka, robot);
     els.followRow.style.display = franka ? "none" : "";     // the arm never moves: fixed view
     els.fallRow.style.display = franka ? "none" : "";        // a bolted-down arm cannot fall
-    els.hudStats.style.display = franka ? "none" : "";       // practice: no goals / falls tally
+    els.hudStats.style.display = franka ? "none" : "";       // the Franka keeps no Success / Fail tally
     els.hudScene.textContent = `${robot.title} · ${scene.title}`;
     setStatus("Ready. Space for Play/Pause.");
     if (oldData && oldData !== data && oldData.delete) { try { oldData.delete(); } catch (e) {} }
@@ -206,13 +209,21 @@ function controlStep(now) {
   }
   if (env.reachedGoal()) endEpisode("goal", now);
   else if (state.resetOnFall && env.fallen()) endEpisode("fall", now);
+  else if (state.scene.timeLimit != null && elapsed() >= state.scene.timeLimit) endEpisode("timeout", now);
 }
 
+// Simulated seconds since the episode started.
+const elapsed = () => (state.env ? state.env.stepCount * state.controlDt : 0);
+const freshStats = () => ({ success: 0, fail: 0, total: 0, successTime: 0 });
+
+// kind: "goal" (a Success), "fall" or "timeout" (both a Fail).
 function endEpisode(kind, now) {
-  const s = state.stats; s.episodes++;
-  if (kind === "goal") { s.goals++; els.hudResult.textContent = "GOAL!"; els.hudResult.className = "result win"; }
-  else { s.falls++; els.hudResult.textContent = "Fell"; els.hudResult.className = "result lose"; }
-  els.flashText.textContent = kind === "goal" ? "GOAL!" : "FELL";
+  const s = state.stats; s.total++;
+  const label = { goal: "GOAL!", fall: "Fell", timeout: "Time out" }[kind];
+  if (kind === "goal") { s.success++; s.successTime += elapsed(); els.hudResult.className = "result win"; }
+  else { s.fail++; els.hudResult.className = "result lose"; }
+  els.hudResult.textContent = label;
+  els.flashText.textContent = label.toUpperCase();
   els.flash.classList.toggle("goal", kind === "goal");
   els.flash.classList.remove("on"); void els.flash.offsetWidth;   // restart the animation
   els.flash.classList.add("on");
@@ -244,7 +255,7 @@ function cacheEls() {
   for (const id of ["status", "play", "followCam", "resetOnFall", "trail", "trailRow",
                     "runSelect", "runRow",
                     "skillBtns", "skillLabel", "fallRow", "followRow",
-                    "hudScene", "hudSkill", "hudCtr", "hudStep", "hudTime",
+                    "hudScene", "hudSkill", "hudCtr", "hudTime",
                     "hudGoalLine", "hudGoal", "hudResult", "hudStats",
                     "flash", "flashText"]) els[id] = $(id);
   els.canvas = $("canvasPlay");
@@ -395,13 +406,14 @@ function updateHud() {
   _lastHud = now;
   els.hudSkill.textContent = keyLabel(state.kbSkill).toUpperCase();
   els.hudCtr.textContent = `${Math.max(0, state.ctr)}`;
-  els.hudStep.textContent = `${state.env.stepCount}`;
-  els.hudTime.textContent = (state.env.stepCount * state.controlDt).toFixed(1);
+  const limit = state.scene && state.scene.timeLimit;
+  els.hudTime.textContent = `${elapsed().toFixed(1)}s` + (limit != null ? ` / ${limit}s` : "");
   const d = state.env.goalDistance();
   els.hudGoalLine.style.display = d == null ? "none" : "";
   if (d != null) els.hudGoal.textContent = d.toFixed(2);
   const s = state.stats;
-  els.hudStats.textContent = `Goals ${s.goals} · Falls ${s.falls} · Episodes ${s.episodes}`;
+  const avg = s.success ? `${(s.successTime / s.success).toFixed(1)}s` : "–";
+  els.hudStats.textContent = `Success ${s.success} · Fail ${s.fail} · Total ${s.total} · Avg success time ${avg}`;
 }
 
 // ---------------- the interface main.js drives ----------------

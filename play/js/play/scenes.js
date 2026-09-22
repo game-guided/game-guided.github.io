@@ -24,6 +24,8 @@ const ANT_CUBE_MASS = 0.2;
 // How far the side walls of a push scene run on past the goal disc, so the disc sits
 // inside the corridor instead of at its open end (corridorWallBoxes `endMargin`).
 const PUSH_END_MARGIN = 5.0;
+// Every push and maze scene (both robots) fails after this much simulated time.
+const TASK_TIME_LIMIT = 180;
 
 function scene(key, title, o = {}) {
   return {
@@ -39,6 +41,8 @@ function scene(key, title, o = {}) {
     // needs the robot to travel starts on its forward gait instead of skill slot 0.
     // null keeps whatever was picked (robots.js `resetSkill`, else the current choice).
     startKey: null,
+    // Seconds of simulated time before the episode counts as a Fail; null never times out.
+    timeLimit: null,
     ...o,
     get goalPos() {
       if (this.mazeMap) return mazeGoalPos(this);
@@ -102,7 +106,7 @@ export const SCENES = {
       endMargin: PUSH_END_MARGIN,
       cubeSize: 1.0, cubePos: [3, 0], cubeMass: ANT_CUBE_MASS, spawnYaw: -Math.PI / 2,
       camera: { eye: [-6.8, 0, 8.5], lookat: [3.0, 0, 0.6] },
-      startKey: 3,
+      startKey: 3, timeLimit: TASK_TIME_LIMIT,
       tips: [
         "Use Skills 1 (Turn Left) and 3 (Move Forward-Right) to position the cube between the front legs.",
         "If your cube gets stuck against the wall, press 5 (Push)!",
@@ -116,7 +120,7 @@ export const SCENES = {
       pathWaypoints: [[0, 0], [15, 0], [15, 15]], wallHeight: 1.0, goalTarget: "cube", goalRadius: 0.5,
       endMargin: PUSH_END_MARGIN,
       cubeSize: 1.0, cubePos: [3, 0], cubeMass: ANT_CUBE_MASS, spawnYaw: -Math.PI / 2, fitView: true,
-      startKey: 3,
+      startKey: 3, timeLimit: TASK_TIME_LIMIT,
       tips: [
         "Use Skills 1 (Turn Left) and 3 (Move Forward-Right) to position the cube between the front legs.",
         "If your cube gets stuck against the wall, press 5 (Push)!",
@@ -129,7 +133,7 @@ export const SCENES = {
     scene("maze", "Maze", {
       mazeMap: ANT_MAZE_MEDIUM_MAP, cellSize: 4.0, wallHeight: 1.0, goalTarget: "robot", goalRadius: 1.0,
       spawnYaw: -Math.PI / 2,
-      startKey: 3,
+      startKey: 3, timeLimit: TASK_TIME_LIMIT,
       tips: [
         "Use Skills 1 (Turn Left) and 3 (Move Forward-Right) to navigate.",
         "When your ant gets stuck on a wall, press 2 (Sharp Turn Left) to escape and reorient the ant toward the desired direction."
@@ -152,7 +156,7 @@ export const SCENES = {
       pathWaypoints: [[-2, 0], [15, 0]], wallHeight: 1.5, goalTarget: "cube", goalRadius: 0.5,
       endMargin: PUSH_END_MARGIN,
       cubeSize: 1.2, cubePos: [2, 0], cubeMass: 1.5,
-      startKey: 2,
+      startKey: 2, timeLimit: TASK_TIME_LIMIT,
       tips: [
         // Tips for this task go here, one string per line.
       ],
@@ -163,7 +167,7 @@ export const SCENES = {
       pathWaypoints: [[0, 0], [7.5, 0], [7.5, 7.5]], wallHeight: 1.5, goalTarget: "cube", goalRadius: 0.5,
       endMargin: 2.0,      // half the legs of the other push scenes: 5 m past the goal would dwarf them
       cubeSize: 1.2, cubePos: [2, 0], cubeMass: 1.5, fitView: true,
-      startKey: 2,
+      startKey: 2, timeLimit: TASK_TIME_LIMIT,
       tips: [
         // Tips for this task go here, one string per line.
       ],
@@ -174,7 +178,7 @@ export const SCENES = {
     // copying Isaac's straight-down camera.
     scene("maze", "Maze", {
       mazeMap: G1_MAZE_MAP, cellSize: 3.0, wallHeight: 1.2, goalTarget: "robot", goalRadius: 0.8,
-      startKey: 2,
+      startKey: 2, timeLimit: TASK_TIME_LIMIT,
       tips: [
         "Try switching back and forth between Skill 1 (Turn Left) and Skill 3 (Turn Right)."
       ],
